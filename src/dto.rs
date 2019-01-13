@@ -2,7 +2,7 @@
 pub enum MatchingResult {
     Queued,
     Executed(Vec<u64>),
-    Cancelled
+    Cancelled,
 }
 
 #[derive(Debug)]

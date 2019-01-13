@@ -22,34 +22,34 @@ impl Matcher {
 
     pub fn try_match(&mut self, request: Request) -> MatchingResult {
         match request.request_type {
-            RequestType::FillOrKill => {
-                match request.side {
-                    Side::Ask => {
-                        let has_sum = self.bids.iter()
-                            .filter(|x| x.request.price <= request.price)
-                            .map(|x| x.request.size)
-                            .scan(0, |s, x| {
-                                *s += x;
-                                Some(*s)
-                            })
-                            .any(|x| x >= request.price);
-                        if !has_sum {
-                            return MatchingResult::Cancelled;
-                        }
-                        unimplemented!()
-                    },
-                    Side::Bid => unimplemented!()
+            RequestType::FillOrKill => match request.side {
+                Side::Ask => {
+                    let has_sum = self
+                        .bids
+                        .iter()
+                        .filter(|x| x.request.price <= request.price)
+                        .map(|x| x.request.size)
+                        .scan(0, |s, x| {
+                            *s += x;
+                            Some(*s)
+                        })
+                        .any(|x| x >= request.price);
+                    if !has_sum {
+                        return MatchingResult::Cancelled;
+                    }
+                    unimplemented!()
                 }
+                Side::Bid => unimplemented!(),
             },
-            _ => unimplemented!()
+            _ => unimplemented!(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::Matcher;
     use crate::dto::*;
+    use crate::Matcher;
 
     #[test]
     pub fn test_fill_or_kill_buy_empty() {
@@ -59,7 +59,7 @@ mod tests {
             price: 10,
             size: 10,
             user_id: 0,
-            request_type: RequestType::FillOrKill
+            request_type: RequestType::FillOrKill,
         };
 
         let result = matcher.try_match(request);
