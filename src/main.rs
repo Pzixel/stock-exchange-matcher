@@ -1,3 +1,6 @@
+mod dto;
+use crate::dto::*;
+
 fn main() {
     println!("Hello, world!");
 }
@@ -17,41 +20,50 @@ impl Matcher {
         }
     }
 
-    pub fn add_request(&mut self, request: Request) {
-        self.current_request_id += 1;
-        let vec = match request.side {
-            Side::Ask => &mut self.asks,
-            Side::Bid => &mut self.bids,
-        };
-        vec.push(Order {
-            id: self.current_request_id,
-            request,
-        });
+    pub fn try_match(&mut self, request: Request) -> MatchingResult {
+        match request.request_type {
+            RequestType::FillOrKill => {
+                match request.side {
+                    Side::Ask => {
+                        let has_sum = self.bids.iter()
+                            .filter(|x| x.request.price <= request.price)
+                            .map(|x| x.request.size)
+                            .scan(0, |s, x| {
+                                *s += x;
+                                Some(*s)
+                            })
+                            .any(|x| x >= request.price);
+                        if !has_sum {
+                            return MatchingResult::Cancelled;
+                        }
+                        unimplemented!()
+                    },
+                    Side::Bid => unimplemented!()
+                }
+            },
+            _ => unimplemented!()
+        }
     }
 }
 
-#[derive(Debug)]
-enum Side {
-    Ask, // buy
-    Bid, // sell
-}
+#[cfg(test)]
+mod tests {
+    use crate::Matcher;
+    use crate::dto::*;
 
-#[derive(Debug)]
-enum RequestType {
-    Limit,
-    FillOrKill,
-    ImmediateOrCancel,
-}
+    #[test]
+    pub fn test_fill_or_kill_buy_empty() {
+        let mut matcher = Matcher::new();
+        let request = Request {
+            side: Side::Ask,
+            price: 10,
+            size: 10,
+            user_id: 0,
+            request_type: RequestType::FillOrKill
+        };
 
-struct Request {
-    side: Side,
-    price: u64,
-    size: u64,
-    user_id: u64,
-    request_type: RequestType,
-}
+        let result = matcher.try_match(request);
 
-struct Order {
-    id: u64,
-    request: Request,
+        assert_eq!(result, MatchingResult::Cancelled);
+    }
 }
