@@ -25,8 +25,3 @@ pub struct Request {
     pub user_id: u64,
     pub request_type: RequestType,
 }
-
-pub struct Order {
-    pub id: u64,
-    pub request: Request,
-}

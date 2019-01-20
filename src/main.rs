@@ -11,6 +11,17 @@ struct Matcher {
     current_request_id: u64,
 }
 
+struct Order {
+    pub id: u64,
+    pub request: Request,
+}
+
+impl Order {
+    pub fn new(id: u64, request: Request) -> Self {
+        Self { id, request }
+    }
+}
+
 impl Matcher {
     pub fn new() -> Self {
         Self {
@@ -24,29 +35,41 @@ impl Matcher {
         match request.request_type {
             RequestType::FillOrKill => match request.side {
                 Side::Ask => {
-                    let has_sum = self.has_sum(request);
-                    if !has_sum {
-                        return MatchingResult::Cancelled;
+                    let requests_count_to_approve = self.requests_count_to_approve(&request);
+                    match requests_count_to_approve {
+                        Some(requests_count_to_approve) => {
+                            let mut size = request.size;
+                            for i in 0..requests_count_to_approve - 1 {
+                                size -= self.bids[i as usize].request.size;
+                            }
+
+                            let items_to_drain = if self.bids[requests_count_to_approve - 1].request.size > size {
+                                requests_count_to_approve - 1
+                            } else {
+                                requests_count_to_approve
+                            };
+
+                            let filled_requests = self.bids.drain(0..items_to_drain).map(|x| x.id).collect();
+                            MatchingResult::Executed(filled_requests)
+                        }
+                        _ => MatchingResult::Cancelled,
                     }
-                    unimplemented!()
                 }
                 Side::Bid => unimplemented!(),
             },
             RequestType::Limit => match request.side {
-                Side::Ask => {
-                    let has_sum = self.has_sum(request);
-                    if !has_sum {
-                        return MatchingResult::Cancelled;
-                    }
-                    unimplemented!()
+                Side::Ask => unimplemented!(),
+                Side::Bid => {
+                    self.bids.push(Order::new(self.current_request_id, request));
+                    self.current_request_id += 1;
+                    MatchingResult::Queued
                 }
-                Side::Bid => unimplemented!(),
             },
             _ => unimplemented!(),
         }
     }
 
-    fn has_sum(&self, request: Request) -> bool {
+    fn requests_count_to_approve(&self, request: &Request) -> Option<usize> {
         match request.side {
             Side::Ask => self
                 .bids
@@ -57,7 +80,7 @@ impl Matcher {
                     *s += x;
                     Some(*s)
                 })
-                .any(|x| x >= request.price),
+                .position(|x| x >= request.size),
             Side::Bid => self
                 .asks
                 .iter()
@@ -67,8 +90,9 @@ impl Matcher {
                     *s += x;
                     Some(*s)
                 })
-                .any(|x| x <= request.price),
+                .position(|x| x <= request.size),
         }
+        .map(|i| i + 1)
     }
 }
 
