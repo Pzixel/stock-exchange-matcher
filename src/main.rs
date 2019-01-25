@@ -8,9 +8,24 @@ fn main() {
     println!("Hello, world!");
 }
 
-struct Matcher<FAsks, FBids> {
-    asks: SortedVec<Order, FAsks>,
-    bids: SortedVec<Order, FBids>,
+struct AsksComparer;
+struct BidsComparer;
+
+impl Comparer<Order> for AsksComparer {
+    fn cmp<'a>(a: &'a Order, b: &'a Order) -> Ordering {
+        unimplemented!()
+    }
+}
+
+impl Comparer<Order> for BidsComparer {
+    fn cmp<'a>(a: &'a Order, b: &'a Order) -> Ordering {
+        unimplemented!()
+    }
+}
+
+struct Matcher {
+    asks: SortedVec<Order, AsksComparer>,
+    bids: SortedVec<Order, BidsComparer>,
     current_request_id: u64,
 }
 
@@ -25,15 +40,11 @@ impl Order {
     }
 }
 
-fn compare_orders(a: &Order, b: &Order) -> Ordering {
-    a.id.cmp(&b.id)
-}
-
-impl<FAsks, FBids> Matcher<FAsks, FBids> {
+impl Matcher {
     pub fn new() -> Self {
         Self {
-            asks: SortedVec::new(compare_orders),
-            bids: SortedVec::new(compare_orders),
+            asks: SortedVec::new(),
+            bids: SortedVec::new(),
             current_request_id: 0,
         }
     }
