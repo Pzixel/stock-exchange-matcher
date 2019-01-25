@@ -1,13 +1,16 @@
+mod collections;
 mod dto;
+use crate::collections::*;
 use crate::dto::*;
+use std::cmp::Ordering;
 
 fn main() {
     println!("Hello, world!");
 }
 
-struct Matcher {
-    asks: Vec<Order>,
-    bids: Vec<Order>,
+struct Matcher<FAsks, FBids> {
+    asks: SortedVec<Order, FAsks>,
+    bids: SortedVec<Order, FBids>,
     current_request_id: u64,
 }
 
@@ -22,11 +25,15 @@ impl Order {
     }
 }
 
-impl Matcher {
+fn compare_orders(a: &Order, b: &Order) -> Ordering {
+    a.id.cmp(&b.id)
+}
+
+impl<FAsks, FBids> Matcher<FAsks, FBids> {
     pub fn new() -> Self {
         Self {
-            asks: Vec::new(),
-            bids: Vec::new(),
+            asks: SortedVec::new(compare_orders),
+            bids: SortedVec::new(compare_orders),
             current_request_id: 0,
         }
     }
