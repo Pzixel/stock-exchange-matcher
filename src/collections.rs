@@ -21,7 +21,7 @@ impl<T, C: Comparer<T>> SortedVec<T, C> {
         }
     }
 
-    pub fn insert(&mut self, item: T) {
+    pub fn push(&mut self, item: T) {
         let items = &self.items;
         let position = match items.binary_search_by(|x| C::cmp(x, &item)) {
             Ok(pos) => pos,
@@ -35,6 +35,10 @@ impl<T, C: Comparer<T>> SortedVec<T, C> {
         R: RangeBounds<usize>,
     {
         self.items.drain(range)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.items.iter()
     }
 }
 
