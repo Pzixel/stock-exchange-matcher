@@ -1,29 +1,18 @@
-use std::cmp::Ordering;
-use std::marker::PhantomData;
 use std::ops::Index;
 use std::ops::RangeBounds;
 use std::vec::Drain;
-
-pub trait Comparer<T> {
-    fn cmp<'a>(a: &'a T, b: &'a T) -> Ordering;
-}
-
-pub struct SortedVec<T, C> {
+pub struct SortedVec<T> {
     items: Vec<T>,
-    comparer: PhantomData<C>,
 }
 
-impl<T, C: Comparer<T>> SortedVec<T, C> {
+impl<T: Ord> SortedVec<T> {
     pub fn new() -> Self {
-        Self {
-            items: Vec::new(),
-            comparer: PhantomData,
-        }
+        Self { items: Vec::new() }
     }
 
     pub fn push(&mut self, item: T) {
         let items = &self.items;
-        let position = match items.binary_search_by(|x| C::cmp(x, &item)) {
+        let position = match items.binary_search(&item) {
             Ok(pos) => pos,
             Err(pos) => pos,
         };
@@ -42,7 +31,7 @@ impl<T, C: Comparer<T>> SortedVec<T, C> {
     }
 }
 
-impl<T, F> Index<usize> for SortedVec<T, F> {
+impl<T> Index<usize> for SortedVec<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {

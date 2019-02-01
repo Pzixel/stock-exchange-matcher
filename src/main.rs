@@ -3,29 +3,73 @@ mod dto;
 use crate::collections::*;
 use crate::dto::*;
 use std::cmp::Ordering;
+use std::ops::Deref;
 
 fn main() {
     println!("Hello, world!");
 }
 
-struct AsksComparer;
-struct BidsComparer;
+struct AsksOrder(Order);
+struct BidsOrder(Order);
 
-impl Comparer<Order> for AsksComparer {
-    fn cmp<'a>(a: &'a Order, b: &'a Order) -> Ordering {
+impl PartialOrd for AsksOrder {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialOrd for BidsOrder {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for AsksOrder {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+
+impl PartialEq for BidsOrder {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+
+impl Eq for AsksOrder {}
+impl Eq for BidsOrder {}
+
+impl Ord for AsksOrder {
+    fn cmp(&self, other: &Self) -> Ordering {
         unimplemented!()
     }
 }
 
-impl Comparer<Order> for BidsComparer {
-    fn cmp<'a>(a: &'a Order, b: &'a Order) -> Ordering {
+impl Ord for BidsOrder {
+    fn cmp(&self, other: &Self) -> Ordering {
         unimplemented!()
+    }
+}
+
+impl Deref for AsksOrder {
+    type Target = Order;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Deref for BidsOrder {
+    type Target = Order;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
 struct Matcher {
-    asks: SortedVec<Order, AsksComparer>,
-    bids: SortedVec<Order, BidsComparer>,
+    asks: SortedVec<AsksOrder>,
+    bids: SortedVec<BidsOrder>,
     current_request_id: u64,
 }
 
@@ -78,7 +122,7 @@ impl Matcher {
             RequestType::Limit => match request.side {
                 Side::Ask => unimplemented!(),
                 Side::Bid => {
-                    self.bids.push(Order::new(self.current_request_id, request));
+                    self.bids.push(BidsOrder(Order::new(self.current_request_id, request)));
                     self.current_request_id += 1;
                     MatchingResult::Queued
                 }
