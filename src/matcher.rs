@@ -113,6 +113,62 @@ mod tests {
     use assert_matches::assert_matches;
 
     #[test]
+    pub fn test_limit() {
+        let mut matcher = Matcher::new();
+        let request1 = Request {
+            side: Side::Ask,
+            price: 10,
+            size: 10,
+            user_id: 0,
+            request_type: RequestType::Limit,
+        };
+
+        let request2 = Request {
+            side: Side::Ask,
+            price: 10,
+            size: 10,
+            user_id: 0,
+            request_type: RequestType::Limit,
+        };
+
+        let request3 = Request {
+            side: Side::Ask,
+            price: 10,
+            size: 10,
+            user_id: 0,
+            request_type: RequestType::Limit,
+        };
+
+        let request4 = Request {
+            side: Side::Bid,
+            price: 10,
+            size: 15,
+            user_id: 0,
+            request_type: RequestType::Limit,
+        };
+
+        let request5 = Request {
+            side: Side::Bid,
+            price: 10,
+            size: 15,
+            user_id: 0,
+            request_type: RequestType::Limit,
+        };
+
+        let result1 = matcher.try_match(request1);
+        let result2 = matcher.try_match(request2);
+        let result3 = matcher.try_match(request3);
+        let result4 = matcher.try_match(request4);
+        let result5 = matcher.try_match(request5);
+
+        assert_eq!(result1, MatchingResult::Queued);
+        assert_eq!(result2, MatchingResult::Queued);
+        assert_eq!(result3, MatchingResult::Queued);
+        assert_matches!(result4, MatchingResult::Executed(_));
+        assert_matches!(result5, MatchingResult::Executed(_));
+    }
+
+    #[test]
     pub fn test_fill_or_kill_buy_empty() {
         let mut matcher = Matcher::new();
         let request = Request {
