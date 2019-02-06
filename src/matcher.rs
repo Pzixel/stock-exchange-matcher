@@ -100,7 +100,7 @@ impl Matcher {
                     *s += x;
                     Some(*s)
                 })
-                .position(|x| x <= request.size),
+                .position(|x| x >= request.size),
         }
         .map(|i| i + 1)
     }
