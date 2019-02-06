@@ -41,10 +41,34 @@ impl Matcher {
                         _ => MatchingResult::Cancelled,
                     }
                 }
-                Side::Bid => unimplemented!(),
+                Side::Bid => {
+                    let requests_count_to_approve = self.requests_count_to_approve(&request);
+                    match requests_count_to_approve {
+                        Some(requests_count_to_approve) => {
+                            let mut size = request.size;
+                            for i in 0..requests_count_to_approve - 1 {
+                                size -= self.asks[i as usize].request.size;
+                            }
+
+                            let items_to_drain = if self.asks[requests_count_to_approve - 1].request.size > size {
+                                requests_count_to_approve - 1
+                            } else {
+                                requests_count_to_approve
+                            };
+
+                            let filled_requests = self.asks.drain(0..items_to_drain).map(|x| x.id).collect();
+                            MatchingResult::Executed(filled_requests)
+                        }
+                        _ => MatchingResult::Cancelled,
+                    }
+                }
             },
             RequestType::Limit => match request.side {
-                Side::Ask => unimplemented!(),
+                Side::Ask => {
+                    self.asks.push(AsksOrder(Order::new(self.current_request_id, request)));
+                    self.current_request_id += 1;
+                    MatchingResult::Queued
+                }
                 Side::Bid => {
                     self.bids.push(BidsOrder(Order::new(self.current_request_id, request)));
                     self.current_request_id += 1;
@@ -93,6 +117,58 @@ mod tests {
         let mut matcher = Matcher::new();
         let request = Request {
             side: Side::Ask,
+            price: 10,
+            size: 10,
+            user_id: 0,
+            request_type: RequestType::FillOrKill,
+        };
+
+        let result = matcher.try_match(request);
+
+        assert_eq!(result, MatchingResult::Cancelled);
+    }
+
+    #[test]
+    pub fn test_fill_or_kill_sell_success() {
+        let mut matcher = Matcher::new();
+        let bid_request = Request {
+            side: Side::Ask,
+            price: 10,
+            size: 5,
+            user_id: 0,
+            request_type: RequestType::Limit,
+        };
+
+        let bid_request2 = Request {
+            side: Side::Ask,
+            price: 10,
+            size: 5,
+            user_id: 0,
+            request_type: RequestType::Limit,
+        };
+
+        let ask_request = Request {
+            side: Side::Bid,
+            price: 10,
+            size: 10,
+            user_id: 0,
+            request_type: RequestType::FillOrKill,
+        };
+
+        let bid_result = matcher.try_match(bid_request);
+        let bid_result2 = matcher.try_match(bid_request2);
+        let ask_result = matcher.try_match(ask_request);
+
+        assert_eq!(bid_result, MatchingResult::Queued);
+        assert_eq!(bid_result2, MatchingResult::Queued);
+        assert_matches!(ask_result, MatchingResult::Executed(_));
+    }
+
+    #[test]
+    pub fn test_fill_or_kill_sell_empty() {
+        let mut matcher = Matcher::new();
+        let request = Request {
+            side: Side::Bid,
             price: 10,
             size: 10,
             user_id: 0,

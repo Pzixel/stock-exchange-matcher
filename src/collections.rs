@@ -5,6 +5,8 @@ pub struct SortedVec<T> {
     items: Vec<T>,
 }
 
+/// Sorted vector of items. Sort is unstable so it's up to user to use
+/// additional comparision field
 impl<T: Ord> SortedVec<T> {
     pub fn new() -> Self {
         Self { items: Vec::new() }
@@ -36,5 +38,20 @@ impl<T> Index<usize> for SortedVec<T> {
 
     fn index(&self, index: usize) -> &Self::Output {
         self.items.index(index)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::collections::SortedVec;
+
+    #[test]
+    pub fn test_keep_order() {
+        let mut vec = SortedVec::new();
+        vec.push(1);
+        vec.push(3);
+        vec.push(2);
+
+        assert_eq!(vec![1, 2, 3], vec.iter().cloned().collect::<Vec<_>>())
     }
 }
