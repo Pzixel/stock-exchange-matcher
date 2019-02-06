@@ -30,7 +30,7 @@ impl Matcher {
                             }
 
                             let items_to_drain = if self.bids[requests_count_to_approve - 1].request.size > size {
-                                requests_count_to_approve - 1
+                                requests_count_to_approve - 1 // TODO: Fix bug with unchanged size
                             } else {
                                 requests_count_to_approve
                             };
@@ -63,18 +63,20 @@ impl Matcher {
                     }
                 }
             },
-            RequestType::Limit => match request.side {
-                Side::Ask => {
-                    self.asks.push(AsksOrder(Order::new(self.current_request_id, request)));
-                    self.current_request_id += 1;
-                    MatchingResult::Queued
+            RequestType::Limit => {
+                let mut request = request;
+                match request.side {
+                    Side::Ask => {
+                        self.asks.push(AsksOrder(Order::new(self.current_request_id, request)));
+                    }
+                    Side::Bid => {
+                        self.bids.push(BidsOrder(Order::new(self.current_request_id, request)));
+                    }
                 }
-                Side::Bid => {
-                    self.bids.push(BidsOrder(Order::new(self.current_request_id, request)));
-                    self.current_request_id += 1;
-                    MatchingResult::Queued
-                }
-            },
+
+                self.current_request_id += 1;
+                MatchingResult::Queued
+            }
             _ => unimplemented!(),
         }
     }
